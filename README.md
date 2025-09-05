@@ -1,5 +1,6 @@
 # qman-binaries
-A set of tools for building fully static Linux binary packages for Qman
+A set of tools for building fully static Linux binary packages for
+[Qman](https://github.com/plp13/qman)
 
 These packages have no dependencies and, in principle, can be used on any Linux
 distribution. For the time being, they are for `x86_64` only.
