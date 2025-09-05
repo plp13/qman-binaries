@@ -1,0 +1,13 @@
+diff --git a/PKGBUILD b/PKGBUILD
+index 9ea7028..4083ed1 100644
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -49,6 +49,8 @@ package() {
+   ln -s libbz2.so.$pkgver "$pkgdir"/usr/lib/libbz2.so
+   ln -s libbz2.so.$pkgver "$pkgdir"/usr/lib/libbz2.so.1 # For compatibility with some other distros
+ 
++  install -m644 libbz2.a "$pkgdir"/usr/lib/
++
+   install -m644 bzlib.h "$pkgdir"/usr/include/
+ 
+   install -m644 bzip2.1 "$pkgdir"/usr/share/man/man1/
