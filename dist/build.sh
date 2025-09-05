@@ -23,6 +23,7 @@ REMOTE="https://github.com/plp13/qman"
 SRC="$( pwd )/qman"
 PKG="$( pwd )/pkg"
 BRANCH="${1}"
+ARCH="x86-64"
 
 rm -fr "${SRC}"
 exit_on_error $?
@@ -48,7 +49,7 @@ meson install
 exit_on_error $?
 cd ../../pkg/
 exit_on_error $?
-tar czvf ../${NAME}-${BRANCH}.tar.gz *
+tar czvf "../${NAME}-${BRANCH}.${ARCH}.tar.gz" *
 exit_on_error $?
 
 exit 0
