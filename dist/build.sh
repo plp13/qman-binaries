@@ -11,7 +11,7 @@ exit_on_error() {
 
 if [ "X${1}" == "X" ]
 then
-  echo "Usage: ${0} <branch or tag>"
+  echo "Usage: ${0} <branch or tag name>"
   exit -1
 fi
 

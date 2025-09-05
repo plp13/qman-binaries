@@ -26,7 +26,7 @@ packages. You can use it as follows:
 
 ```
 $ cd dist/
-$ ./build.sh
+$ ./build.sh <brach or tag name>
 ```
 
 The following package types are created:
