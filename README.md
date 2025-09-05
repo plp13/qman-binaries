@@ -26,8 +26,16 @@ packages. You can use it as follows:
 
 ```
 $ cd dist/
-$ ./build.sh <brach or tag name>
+$ ./build.sh devel
 ```
+
+`devel` can be replaced with the name of any other Qman branch or tag that
+supports static linking.
+
+> **:bulb: Note**
+>
+> No such branches or tags currently exist. The first Qman version to support
+> static linking will be 1.6.0.
 
 The following package types are created:
 - `qman-<version>.tar.gz` - generic tarball
