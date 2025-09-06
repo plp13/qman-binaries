@@ -38,8 +38,23 @@ supports static linking.
 > No such branches or tags currently exist. The first Qman version to support
 > static linking will be 1.6.0.
 
+`build.sh` configures `meson` with the following options:
+
+```
+-Dtests=disabled -Dstaticexe=true
+```
+
+Additional options can be passed via the `BUILD_MESON_OPTIONS` environment
+variable. For example, to enable `libbsd` support, use:
+
+```
+$ BUILD_MESON_OPTIONS="-Dlibbsd=enabled" ./build.sh devel
+```
+
 The following package types are created:
-- `qman-<version>.tar.gz` - generic tarball
+- `qman-<version>.x86-64.tar.gz` - generic tarball
+- `qman_<version>_amd64.deb` - package for distributions that use dpkg packages,
+  such as Debian and Ubuntu
 
 ## Problems
 

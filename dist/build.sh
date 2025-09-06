@@ -51,7 +51,7 @@ git apply ../qman.patch
 exit_on_error $?
 rm -fr build/
 exit_on_error $?
-meson setup -Dtests=disabled -Dstaticexe=true -Dprefix="${PKG}/usr" -Dconfigdir="${PKG}/etc/xdg/qman" build/
+meson setup "${BUILD_MESON_OPTIONS}" -Dtests=disabled -Dstaticexe=true -Dprefix="${PKG}/usr" -Dconfigdir="${PKG}/etc/xdg/qman" build/
 exit_on_error $?
 cd build/
 exit_on_error $?
