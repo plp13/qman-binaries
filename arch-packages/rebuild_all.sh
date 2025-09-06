@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Rebuild and reinstall all packages required by Qman, static libraries enabled
 
-PACKAGES=( 'ncurses' 'libbsd' 'zlib' 'bzip2' 'xz' )
-
 exit_on_error() {
   if [ "X${1}" != "X0" ]
   then
@@ -14,9 +12,11 @@ exit_on_error() {
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 exit_on_error $?
 
+PACKAGES=( 'ncurses' 'libbsd' 'zlib' 'bzip2' 'xz' )
+
 for P in "${PACKAGES[@]}"
 do
-  echo "* Building ${P}"
+  echo "*** Building ${P}"
   pkgctl repo clone "${P}"
   exit_on_error $?
   cd "${P}"
