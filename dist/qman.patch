@@ -1,0 +1,14 @@
+diff --git a/config/qman.conf b/config/qman.conf
+index feffb38..e1bb767 100644
+--- a/config/qman.conf
++++ b/config/qman.conf
+@@ -13,6 +13,9 @@ enable=             true
+ 
+ [misc]
+ 
++; Many pre-2023 Linux distributions need this to function properly
++system_type=        freebsd
++
+ ; If using a graphical web browser, uncomment this to suppress an annoying
+ ; flicker after opening an HTTP link
+ ; reset_after_http=   false

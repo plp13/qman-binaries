@@ -47,6 +47,8 @@ VERSION="$( git describe )"
 exit_on_error $?
 git pull
 exit_on_error $?
+git apply ../qman.patch
+exit_on_error $?
 rm -fr build/
 exit_on_error $?
 meson setup -Dtests=disabled -Dstaticexe=true -Dprefix="${PKG}/usr" -Dconfigdir="${PKG}/etc/xdg/qman" build/
