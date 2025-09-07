@@ -22,11 +22,11 @@ The script will rebuild and reinstall all Arch Linux packages that are necessary
 for building Qman with static library support enabled. It requires `sudo` and
 will prompt you to install the rebuilt packages.
 
-[dist/build.sh](dist/build.sh) is the script that builds the actual binary
+[build/build.sh](build/build.sh) is the script that builds the actual binary
 packages. You can use it as follows:
 
 ```
-$ cd dist/
+$ cd build/
 $ ./build.sh devel
 ```
 
