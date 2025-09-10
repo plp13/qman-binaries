@@ -3,6 +3,8 @@
 *.deb
 pkg/
 qman/
+deb/
+rpm/
 ncurses/
 libbsd/
 zlib/
