@@ -79,7 +79,12 @@ build_pkg() {
   title "Building generic package (.tar.gz)"
   cmdrun cd "${SRC}"
   cmdrun rm -fr build/
-  cmdrun meson setup "${BUILD_MESON_OPTIONS}" -Dtests=disabled -Dstaticexe=true -Dprefix="${PKG}/usr" -Dconfigdir="${PKG}/etc/xdg/qman" build/
+  if [ "X${BUILD_MESON_OPTIONS}" == "X" ]
+  then
+    cmdrun meson setup -Dtests=disabled -Dstaticexe=true -Dprefix="${PKG}/usr" -Dconfigdir="${PKG}/etc/xdg/qman" build/
+  else
+    cmdrun meson setup "${BUILD_MESON_OPTIONS}" -Dtests=disabled -Dstaticexe=true -Dprefix="${PKG}/usr" -Dconfigdir="${PKG}/etc/xdg/qman" build/
+  fi
   cmdrun cd build/
   cmdrun meson compile
   cmdrun strip src/qman
