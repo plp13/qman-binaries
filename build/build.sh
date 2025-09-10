@@ -14,8 +14,11 @@ exit_on_error $?
 # Set up help
 help_summary "Build all Qman binary packages"
 help_usage "${0} <branch or tag name>"
+help_arg "Clean up the build directory" "c"
+help_arg "Only build the generic package" "p"
+help_arg "Only build the generic and Debian packages" "d"
+help_arg "Only build the generic and Red Hat packages" "r"
 help_arg "Show this help message" "h"
-help_arg "Clean up the build directory" c
 
 # Variables
 NAME="qman"                            # Program name
@@ -25,7 +28,7 @@ SRC="${ROOT}/${NAME}"                  # Local directory for project sources
 PKG="${ROOT}/pkg"                      # Local directory for building the .tar.gz package
 DEB="${ROOT}/deb"                      # Local directory for building the .deb package
 RPM="${ROOT}/rpm"                      # Local directory for building the .rpm package
-BRANCH="${1}"                          # Branch or tag name
+BRANCH=""                              # Branch or tag name
 VERSION=""                             # Program version
 VERSION_RPM=""                         # Program version (.rpm format)
 ARCH="x86-64"                          # Target architecture
@@ -218,14 +221,34 @@ EOF
 # Main
 #
 
+# Variables
+SKIP_DEB=0 # Skip building the Debian package
+SKIP_RPM=0 # Skip building the Red Hat package
+
 # Handle command-line options
-while getopts 'ch' OPT
+while getopts 'cpdrh' OPT
 do
   case "${OPT}" in
     c)
       # Clean up the build directory
       build_clean
       exit 0
+      ;;
+    p)
+      # Only build the generic package
+      title "Will only build the generic package"
+      SKIP_DEB=1
+      SKIP_RPM=1
+      ;;
+    d)
+      # Only build the generic and Debian packages
+      title "Will only build the generic and Debian packages"
+      SKIP_RPM=1
+      ;;
+    r)
+      # Build the generic and Red Hat packages
+      title "Will only build the generic and Red Hat packages"
+      SKIP_DEB=1
       ;;
     h)
       # Show help
@@ -235,6 +258,7 @@ do
   esac
 done
 shift "$(( ${OPTIND} -1 ))"
+BRANCH="${1}"
 
 # If $1 wasn't supplied, show help
 if [ "X${1}" == "X" ]
@@ -247,6 +271,12 @@ fi
 build_clean
 build_fetch
 build_pkg
-build_deb
-build_rpm
+if [ ${SKIP_DEB} -eq 0 ]
+then
+  build_deb
+fi
+if [ ${SKIP_RPM} -eq 0 ]
+then
+  build_rpm
+fi
 exit 0
