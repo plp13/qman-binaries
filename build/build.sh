@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Build all Qman binary packages
 
+#
+# Preamble
+#
+
 source ../include/lib.sh
 
 # Go to the directory that contains the script
@@ -11,25 +15,7 @@ exit_on_error $?
 help_summary "Build all Qman binary packages"
 help_usage "${0} <branch or tag name>"
 help_arg "Show this help message" "h"
-
-# Show help and exit, if we got a `-h`
-while getopts 'h' OPT
-do
-  case "${OPT}" in
-    h)
-      help
-      exit 0
-      ;;
-  esac
-done
-shift "$(( ${OPTIND} -1 ))"
-
-# Show help and exit, if $1 wasn't supplied
-if [ "X${1}" == "X" ]
-then
-  help
-  exit -1
-fi
+help_arg "Clean up the build directory" c
 
 # Variables
 NAME="qman"                            # Program name
@@ -51,59 +37,70 @@ TRGT_PKG=""                            # Target fn for generic package (.tar.gz)
 TRGT_DEB=""                            # Target fn for Debian package (.deb)
 TRGT_RPM=""                            # Target fn for Red Hat package (.rpm)
 
-# Cleanup
-title "Cleaning up"
-cmdrun rm -fr "${SRC}"
-cmdrun rm -fr "${PKG}"
-cmdrun rm -fr "${DEB}"
-cmdrun rm -fr "${RPM}"
-cmdrun rm -f "${ROOT}/"*".tar.gz"
-cmdrun rm -f "${ROOT}/"*".deb"
-cmdrun rm -f "${ROOT}/"*".rpm"
-ok
+#
+# Functions
+#
+
+# Clean up the build directory
+build_clean() {
+  title "Cleaning up"
+  cmdrun rm -fr "${SRC}"
+  cmdrun rm -fr "${PKG}"
+  cmdrun rm -fr "${DEB}"
+  cmdrun rm -fr "${RPM}"
+  cmdrun rm -f "${ROOT}/"*".tar.gz"
+  cmdrun rm -f "${ROOT}/"*".deb"
+  cmdrun rm -f "${ROOT}/"*".rpm"
+  ok
+}
 
 # Retrieve the sources
-title "Retrieving ${NAME} sources"
-cmdrun git clone -b "${BRANCH}" "${REMOTE}" "${SRC}"
-cmdrun cd "${SRC}"
-VERSION="$( git describe )"
-VERSION_RPM="$( echo "${VERSION}" | sed 's/-/./g' )"
-TRGT_PKG="${NAME}-${VERSION}.${ARCH}.tar.gz"
-TRGT_DEB="${NAME}_${VERSION}_${ARCH_DEB}.deb"
-TRGT_RPM="${NAME}-${VERSION_RPM}-1.${ARCH_RPM}.rpm"
-exit_on_error $?
-cmdrun git pull
-if [ -f "../${NAME}.patch" ]
-then
-  cmdrun git apply "../${NAME}.patch"
-fi
-cmdrun cd ..
-ok
+build_fetch() {
+  title "Retrieving ${NAME} sources"
+  cmdrun git clone -b "${BRANCH}" "${REMOTE}" "${SRC}"
+  cmdrun cd "${SRC}"
+  VERSION="$( git describe )"
+  VERSION_RPM="$( echo "${VERSION}" | sed 's/-/./g' )"
+  TRGT_PKG="${NAME}-${VERSION}.${ARCH}.tar.gz"
+  TRGT_DEB="${NAME}_${VERSION}_${ARCH_DEB}.deb"
+  TRGT_RPM="${NAME}-${VERSION_RPM}-1.${ARCH_RPM}.rpm"
+  exit_on_error $?
+  cmdrun git pull
+  if [ -f "../${NAME}.patch" ]
+  then
+    cmdrun git apply "../${NAME}.patch"
+  fi
+  cmdrun cd ..
+  ok
+}
 
 # Build the generic package (.tar.gz)
-title "Building generic package (.tar.gz)"
-cmdrun cd "${SRC}"
-cmdrun rm -fr build/
-cmdrun meson setup "${BUILD_MESON_OPTIONS}" -Dtests=disabled -Dstaticexe=true -Dprefix="${PKG}/usr" -Dconfigdir="${PKG}/etc/xdg/qman" build/
-cmdrun cd build/
-cmdrun meson compile
-cmdrun strip src/qman
-cmdrun meson install
-cmdrun cd "${PKG}"
-cmdrun gzip --best -n usr/share/man/man1/qman.1
-cmdrun tar czvf "${ROOT}/${TRGT_PKG}" *
-cmdrun cd ..
-ok
+build_pkg() {
+  title "Building generic package (.tar.gz)"
+  cmdrun cd "${SRC}"
+  cmdrun rm -fr build/
+  cmdrun meson setup "${BUILD_MESON_OPTIONS}" -Dtests=disabled -Dstaticexe=true -Dprefix="${PKG}/usr" -Dconfigdir="${PKG}/etc/xdg/qman" build/
+  cmdrun cd build/
+  cmdrun meson compile
+  cmdrun strip src/qman
+  cmdrun meson install
+  cmdrun cd "${PKG}"
+  cmdrun gzip --best -n usr/share/man/man1/qman.1
+  cmdrun tar czvf "${ROOT}/${TRGT_PKG}" *
+  cmdrun cd ..
+  ok
+}
 
 # Build the Debian package (.deb)
-title "Building Debian package (.deb)"
-cmdrun mkdir "${DEB}"
-cmdrun cd "${DEB}"
-cmdrun mkdir "${NAME}" 
-cmdrun cp -fr "${PKG}/"* "${NAME}/"
-cmdrun mkdir "${NAME}/DEBIAN"
-bullet "*" "Populating ${NAME}/DEBIAN/control"
-cat << EOF >> "${NAME}/DEBIAN/control"
+build_deb() {
+  title "Building Debian package (.deb)"
+  cmdrun mkdir "${DEB}"
+  cmdrun cd "${DEB}"
+  cmdrun mkdir "${NAME}" 
+  cmdrun cp -fr "${PKG}/"* "${NAME}/"
+  cmdrun mkdir "${NAME}/DEBIAN"
+  bullet "*" "Populating ${NAME}/DEBIAN/control"
+  cat << EOF >> "${NAME}/DEBIAN/control"
 Package: ${NAME}
 Version: ${VERSION}
 Section: utils
@@ -112,36 +109,38 @@ Architecture: ${ARCH_DEB}
 Maintainer: ${AUTHOR} <${EMAIL}>
 Description: A more modern manual page viewer for our terminals
 EOF
-exit_on_error $?
-bullet "*" "Populating ${NAME}/DEBIAN/conffiles"
-cat << EOF >> "${NAME}/DEBIAN/conffiles"
+  exit_on_error $?
+  bullet "*" "Populating ${NAME}/DEBIAN/conffiles"
+  cat << EOF >> "${NAME}/DEBIAN/conffiles"
 /etc/xdg/qman/qman.conf
 EOF
-exit_on_error $?
-for F in "${PKG}/etc/xdg/qman/themes/"*
-do
-  echo "/etc/xdg/qman/themes/$( basename "${F}" )" >> qman/DEBIAN/conffiles
   exit_on_error $?
-done
-cmdrun cp "${SRC}/LICENSE" ${NAME}/DEBIAN/copyright
-cmdrun dpkg-deb --root-owner-group --build ${NAME}/ "${ROOT}/${TRGT_DEB}"
-cmdrun cd ..
-ok
+  for F in "${PKG}/etc/xdg/qman/themes/"*
+  do
+    echo "/etc/xdg/qman/themes/$( basename "${F}" )" >> qman/DEBIAN/conffiles
+    exit_on_error $?
+  done
+  cmdrun cp "${SRC}/LICENSE" ${NAME}/DEBIAN/copyright
+  cmdrun dpkg-deb --root-owner-group --build ${NAME}/ "${ROOT}/${TRGT_DEB}"
+  cmdrun cd ..
+  ok
+}
 
 # Build the Red Hat package (.rpm)
-title "Building Red Hat package (.rpm)"
-exit_on_error $?
-cmdrun mkdir "${RPM}"
-cmdrun cd "${RPM}"
-cmdrun mkdir BUILD
-cmdrun mkdir BUILDROOT
-cmdrun mkdir RPMS
-cmdrun mkdir SRPMS
-cmdrun mkdir SOURCES
-cmdrun mkdir SPECS
-cmdrun cp "${ROOT}/${TRGT_PKG}" SOURCES/
-bullet "*" "Populating SPECS/${NAME}.spec"
-cat << EOF >> "SPECS/${NAME}.spec"
+build_rpm() {
+  title "Building Red Hat package (.rpm)"
+  exit_on_error $?
+  cmdrun mkdir "${RPM}"
+  cmdrun cd "${RPM}"
+  cmdrun mkdir BUILD
+  cmdrun mkdir BUILDROOT
+  cmdrun mkdir RPMS
+  cmdrun mkdir SRPMS
+  cmdrun mkdir SOURCES
+  cmdrun mkdir SPECS
+  cmdrun cp "${ROOT}/${TRGT_PKG}" SOURCES/
+  bullet "*" "Populating SPECS/${NAME}.spec"
+  cat << EOF >> "SPECS/${NAME}.spec"
 Name:           ${NAME}
 Version:        ${VERSION_RPM}
 Release:        1
@@ -192,22 +191,57 @@ rm -rf "\${RPM_BUILD_ROOT}"
 
 %files
 EOF
-exit_on_error $?
-cmdrun tar ztf "SOURCES/${TRGT_PKG}" | grep "usr/bin/" | grep -v '/$' | sed 's/usr\/bin\//%{_bindir}\//g' >> "SPECS/${NAME}.spec"
-cmdrun tar ztf "SOURCES/${TRGT_PKG}" | grep "etc/" | grep -v '/$' | sed 's/etc\//%{_sysconfdir}\//g' >> "SPECS/${NAME}.spec"
-cmdrun tar ztf "SOURCES/${TRGT_PKG}" | grep "usr/share/man/" | grep -v '/$' | sed 's/usr\/share\/man\//%{_mandir}\//g' >> "SPECS/${NAME}.spec"
-cmdrun tar ztf "SOURCES/${TRGT_PKG}" | grep "usr/share/doc/" | grep -v '/$' | sed 's/usr\/share\/doc\//%{_docdir}\//g' >> "SPECS/${NAME}.spec"
-bullet "*" "Populating SPECS/${NAME}.spec"
-cat << EOF >> "SPECS/${NAME}.spec"
-
+  exit_on_error $?
+  cmdrun tar ztf "SOURCES/${TRGT_PKG}" | grep "usr/bin/" | grep -v '/$' | sed 's/usr\/bin\//%{_bindir}\//g' >> "SPECS/${NAME}.spec"
+  cmdrun tar ztf "SOURCES/${TRGT_PKG}" | grep "etc/" | grep -v '/$' | sed 's/etc\//%{_sysconfdir}\//g' >> "SPECS/${NAME}.spec"
+  cmdrun tar ztf "SOURCES/${TRGT_PKG}" | grep "usr/share/man/" | grep -v '/$' | sed 's/usr\/share\/man\//%{_mandir}\//g' >> "SPECS/${NAME}.spec"
+  cmdrun tar ztf "SOURCES/${TRGT_PKG}" | grep "usr/share/doc/" | grep -v '/$' | sed 's/usr\/share\/doc\//%{_docdir}\//g' >> "SPECS/${NAME}.spec"
+  bullet "*" "Populating SPECS/${NAME}.spec"
+  cat << EOF >> "SPECS/${NAME}.spec"
 %changelog
 * $( date '+%a %b %d %Y' ) ${AUTHOR} <${EMAIL}> - ${VERSION_RPM}
 - Build RPM package for ${NAME} ${VERSION_RPM}
 EOF
-exit_on_error $?
-cmdrun rpmbuild --define "_topdir ${PWD}" --build-in-place -bb "SPECS/${NAME}.spec"
-cmdrun mv "RPMS/${ARCH_RPM}/${TRGT_RPM}" ..
-cd ..
-ok
+  exit_on_error $?
+  cmdrun rpmbuild --define "_topdir ${PWD}" --build-in-place -bb "SPECS/${NAME}.spec"
+  cmdrun mv "RPMS/${ARCH_RPM}/${TRGT_RPM}" ..
+  cd ..
+  ok
+}
 
+#
+# Main
+#
+
+# Handle command-line options
+while getopts 'ch' OPT
+do
+  case "${OPT}" in
+    c)
+      # Clean up the build directory
+      build_clean
+      exit 0
+      ;;
+    h)
+      # Show help
+      help
+      exit 0
+      ;;
+  esac
+done
+shift "$(( ${OPTIND} -1 ))"
+
+# If $1 wasn't supplied, show help
+if [ "X${1}" == "X" ]
+then
+  help
+  exit -1
+fi
+
+# Otherwise, clean up and rebuild everything
+build_clean
+build_fetch
+build_pkg
+build_deb
+build_rpm
 exit 0

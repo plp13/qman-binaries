@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Rebuild and reinstall all packages required by Qman, static libraries enabled
 
+#
+# Preamble
+#
+
 source ../include/lib.sh
 
 # Go to the directory that contains the script
@@ -12,11 +16,43 @@ help_summary "Rebuild and reinstall all packages required by Qman, static librar
 help_usage "${0}"
 help_arg "Show this help message" "h"
 
-# Show help and exit, if we got a `-h`
+# Packages to rebuild
+PACKAGES=( 'ncurses' 'libbsd' 'zlib' 'bzip2' 'xz' )
+
+#
+# Functions
+#
+
+# Rebuild and reinstall the packages
+rebuild_all() {
+  for P in "${PACKAGES[@]}"
+  do
+    title "Building ${P}"
+    cmdrun pkgctl repo clone "${P}"
+    cmdrun cd "${P}"
+    cmdrun git reset --hard
+    cmdrun git pull
+    if [ -f "../${P}.patch" ]
+    then
+      cmdrun git apply "../${P}.patch"
+    fi
+    cmdrun makepkg --config ../makepkg.conf --force --skippgpcheck
+    cmdrun sudo pacman -U "${P}-"[0-9]*".pkg.tar"
+    cmdrun cd ..
+    ok
+  done
+}
+
+#
+# Main
+#
+
+# Handle command-line options
 while getopts 'h' OPT
 do
   case "${OPT}" in
     h)
+      # Show help
       help
       exit 0
       ;;
@@ -24,25 +60,6 @@ do
 done
 shift "$(( ${OPTIND} -1 ))"
 
-# Packages to rebuild
-PACKAGES=( 'ncurses' 'libbsd' 'zlib' 'bzip2' 'xz' )
-
-# Rebuild and reinstall the packages
-for P in "${PACKAGES[@]}"
-do
-  title "Building ${P}"
-  cmdrun pkgctl repo clone "${P}"
-  cmdrun cd "${P}"
-  cmdrun git reset --hard
-  cmdrun git pull
-  if [ -f "../${P}.patch" ]
-  then
-    cmdrun git apply "../${P}.patch"
-  fi
-  cmdrun makepkg --config ../makepkg.conf --force --skippgpcheck
-  cmdrun sudo pacman -U "${P}-"[0-9]*".pkg.tar"
-  cmdrun cd ..
-  ok
-done
-
+# Rebuild all packages
+rebuild_all
 exit 0
